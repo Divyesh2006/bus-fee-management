@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCET Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f4f7f6; }
+        .container-fluid { max-width: 1400px; }
+        .card-header-icon { font-size: 1.5rem; margin-right: 0.5rem; opacity: 0.7; }
+        .stat-card { text-align: center; }
+        .stat-card .stat-value { font-size: 2.25rem; font-weight: 700; color: var(--bs-primary); }
+        .stat-card .stat-label { font-size: 0.9rem; text-transform: uppercase; color: #6c757d; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="https://www.velalarengg.ac.in/images/logo.png" alt="VCET Logo" height="40" class="me-2">
+                <span class="fs-5">VCET Admin Dashboard</span>
+            </a>
+            <a href="/student" class="btn btn-outline-light" target="_blank">
+                <i class="bi bi-person-circle"></i> View Student Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container-fluid my-4">
+
+        <ul class="nav nav-tabs nav-fill fs-5" id="adminTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="calculator-tab" data-bs-toggle="tab" data-bs-target="#calculator-tab-pane" type="button" role="tab">
+                    💰 Fare Calculator
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="merge-tab" data-bs-toggle="tab" data-bs-target="#merge-tab-pane" type="button" role="tab">
+                    🚌 Merge Calculator
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-tab-pane" type="button" role="tab">
+                    🔧 Digital Logs
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics-tab-pane" type="button" role="tab">
+                    📊 Analytics
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="adminTabContent">
+            
+            <div class="tab-pane fade show active" id="calculator-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row g-4 mt-2">
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center">
+                                <i class="bi bi-toggles2 card-header-icon"></i> Velalar to Namakkal Route
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="fare-form">
+                                    <h6 class="text-primary fw-bold">1. Cost Factors (Per Day)</h6>
+                                    
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6"><label for="avg_route_km_day" class="form-label">Avg. Daily KMs (Total)</label><input type="number" class="form-control" id="avg_route_km_day" value="110" required></div>
+                                        <div class="col-md-6"><label for="bus_mileage" class="form-label">Bus Mileage (KM/Ltr)</label><input type="number" class="form-control" id="bus_mileage" value="5" required></div>
+                                        <div class="col-md-6"><label for="maint_cost_day" class="form-label">Daily Maint. Cost (₹)</label><input type="number" class="form-control" id="maint_cost_day" value="800" required></div>
+                                        <div class="col-md-6"><label for="driver_salary_day" class="form-label">Driver Salary / Day</label><input type="number" class="form-control" id="driver_salary_day" value="850" required></div>
+                                        <div class="col-md-6"><label for="insurance_cost_day" class="form-label">Insurance/Permits / Day</label><input type="number" class="form-control" id="insurance_cost_day" value="350" required></div>
+                                        <div class="col-md-6"><label for="days_in_semester" class="form-label">Days in Semester</label><input type="number" class="form-control" id="days_in_semester" value="120" required></div>
+                                        <div class="col-md-12"><label for="contingency_pct" class="form-label">Contingency Fund (%)</label><input type="number" class="form-control" id="contingency_pct" value="10" required></div>
+                                    </div>
+
+                                    <h6 class="text-primary fw-bold mt-4">2. Stopping Zones & Students</h6>
+                                    <div id="stops-container" class="mb-2" style="max-height: 250px; overflow-y: auto; padding-right: 10px;">
+                                        </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-stop-btn"><i class="bi bi-plus-circle"></i> Add Stop Zone</button>
+                                    
+                                    <hr class="my-4">
+                                    <button type="submit" class="btn btn-success w-100 fs-5 fw-bold" id="calculate-btn">
+                                        <i class="bi bi-calculator-fill"></i> Calculate & Set Fares
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div id="loading-spinner" class="text-center mt-5" style="display: none;">
+                            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                            <p class="mt-2 fs-5 text-muted">Calculating Fares...</p>
+                        </div>
+                        <div id="results-placeholder" class="text-center mt-5 p-5 bg-white rounded shadow-sm">
+                            <i class="bi bi-graph-up-arrow" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="mt-3 fs-5 text-muted">Click "Calculate" to see the full dashboard.</p>
+                        </div>
+                        <div id="results-content" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-4"><div class="card shadow-sm stat-card"><div class="card-body"><div class="stat-value" id="stat-total-cost">--</div><div class="stat-label">Total Semester Cost</div></div></div></div>
+                                <div class="col-md-4"><div class="card shadow-sm stat-card"><div class="card-body"><div class="stat-value" id="stat-total-students">--</div><div class="stat-label">Total Students</div></div></div></div>
+                                <div class="col-md-4"><div class="card shadow-sm stat-card"><div class="card-body"><div class="stat-value" id="stat-avg-cost">--</div><div class="stat-label">Avg. Cost / Student</div></div></div></div>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-5"><div class="card shadow-sm"><div class="card-header bg-white fw-bold"><i class="bi bi-pie-chart-fill text-primary"></i> Cost Breakdown</div><div class="card-body"><canvas id="costBreakdownChart"></canvas></div></div></div>
+                                <div class="col-md-7"><div class="card shadow-sm"><div class="card-header bg-white fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Fair Fare per Stop (Semester)</div><div class="card-body"><canvas id="fareBarChart"></canvas></div></div></div>
+                            </div>
+                             <div class="card shadow-sm mt-3"><div class="card-header bg-white fw-bold"><i class="bi bi-table text-primary"></i> Fare Breakdown Table</div><div class="card-body"><table class="table table-striped table-hover"><thead><tr><th>Stop Zone</th><th>Distance (KM)</th><th>Students</th><th class="text-end">Semester Fare</th></tr></thead><tbody id="fare-table-body"></tbody></table></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="merge-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row justify-content-center mt-4">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center">
+                                <i class="bi bi-arrows-collapse card-header-icon"></i> Bus Merge Cost Savings
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="merge-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-12"><label for="merge-days" class="form-label">Days in Semester</label><input type="number" class="form-control" id="merge-days" value="120"></div>
+                                        <hr>
+                                        <div class="col-md-6"><label for="bus1-cost" class="form-label">Bus 1 Total Daily Cost (₹)</label><input type="number" class="form-control" id="bus1-cost" value="4200"></div>
+                                        <div class="col-md-6"><label for="bus2-cost" class="form-label">Bus 2 Total Daily Cost (₹)</label><input type="number" class="form-control" id="bus2-cost" value="4000"></div>
+                                        <hr>
+                                        <div class="col-md-12"><label for="merged-cost" class="form-label">Merged Bus Total Daily Cost (₹)</label><input type="number" class="form-control" id="merged-cost" value="5500"></div>
+                                        <div class="col-12"><button type="submit" class="btn btn-primary w-100">Calculate Savings</button></div>
+                                    </div>
+                                </form>
+                                <div id="merge-results" class="mt-4" style="display: none;">
+                                    <h4 class="text-center">Savings Report</h4>
+                                    <table class="table table-bordered fs-5">
+                                        <tbody>
+                                            <tr><td>Cost (2 Buses)</td><td class="text-end" id="merge-result-separate">--</td></tr>
+                                            <tr><td>Cost (1 Merged Bus)</td><td class="text-end" id="merge-result-merged">--</td></tr>
+                                            <tr class="table-success"><td class="fw-bold">Total Semester Savings</td><td class="text-end fw-bold" id="merge-result-savings">--</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="logs-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row g-4 mt-2">
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm sticky-top" style="top: 20px;">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center">
+                                <i class="bi bi-journal-plus card-header-icon"></i> Add New Log Entry
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="log-form">
+                                    <div class="mb-3"><label for="log-date" class="form-label">Date</label><input type="date" class="form-control" id="log-date" required></div>
+                                    <div class="mb-3"><label for="log-bus-id" class="form-label">Bus ID (e.g., VCET-BUS-01)</label><input type="text" class="form-control" id="log-bus-id" placeholder="VCET-BUS-06" required></div>
+                                    <div class="mb-3"><label for="log-category" class="form-label">Category</label><select class="form-select" id="log-category" required><option value="Maintenance" selected>Maintenance</option><option value="Fuel">Fuel</option><option value="Driver Performance">Driver Performance</option><option value="Trip History">Trip History</option><option value="Other">Other</option></select></div>
+                                    <div class="mb-3"><label for="log-description" class="form-label">Description</label><textarea class="form-control" id="log-description" rows="3" placeholder="Replaced rear tire" required></textarea></div>
+                                    <div class="mb-3"><label for="log-cost" class="form-label">Cost (₹) (0 if not applicable)</label><input type="number" class="form-control" id="log-cost" value="0" required></div>
+                                    <button type="submit" class="btn btn-primary w-100" id="add-log-btn"><i class="bi bi-check-circle-fill"></i> Save Log Entry</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center"><i class="bi bi-clock-history card-header-icon"></i> Log History</div>
+                            <div class="card-body"><div class="table-responsive"><table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Bus ID</th><th>Category</th><th>Description</th><th class="text-end">Cost (₹)</th></tr></thead><tbody id="log-table-body"></tbody></table></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="analytics-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row g-4 mt-2">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center">
+                                <i class="bi bi-fuel-pump-diesel-fill card-header-icon"></i> Historical Fuel Price (Chennai)
+                            </div>
+                            <div class="card-body p-4">
+                                <canvas id="fuelPriceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fs-5 fw-bold d-flex align-items-center">
+                                <i class="bi bi-pie-chart-fill card-header-icon"></i> Log Cost Breakdown
+                            </div>
+                            <div class="card-body p-4">
+                                <canvas id="logCostChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> </div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Helper function for formatting currency
+        function formatCurrency(value) {
+            return value.toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            /**
+             * ----------------------------------------
+             * FARE CALCULATOR LOGIC (Updated Payload)
+             * ----------------------------------------
+             */
+            const stopsContainer = document.getElementById('stops-container');
+            const addStopBtn = document.getElementById('add-stop-btn');
+            const fareForm = document.getElementById('fare-form');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const resultsPlaceholder = document.getElementById('results-placeholder');
+            const resultsContent = document.getElementById('results-content');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            let costChartInstance = null;
+            let fareChartInstance = null;
+            let stopCount = 0;
+
+            function addStop(name = '', distance = '', students = '') {
+                stopCount++;
+                const stopHtml = `
+                    <div class="row g-2 mb-2 stop-row" data-stop-id="${stopCount}">
+                        <div class="col-4"><input type="text" class="form-control form-control-sm stop-name" placeholder="Zone Name" value="${name}" required></div>
+                        <div class="col-3"><input type="number" class="form-control form-control-sm stop-distance" placeholder="KM" value="${distance}" required></div>
+                        <div class="col-3"><input type="number" class="form-control form-control-sm stop-students" placeholder="# Students" value="${students}" required></div>
+                        <div class="col-2"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-stop-btn"><i class="bi bi-trash"></i></button></div>
+                    </div>
+                `;
+                stopsContainer.insertAdjacentHTML('beforeend', stopHtml);
+            }
+
+            addStopBtn.addEventListener('click', () => addStop());
+            stopsContainer.addEventListener('click', function(e) { if (e.target.closest('.remove-stop-btn')) { e.target.closest('.stop-row').remove(); } });
+
+            // Pre-populate with real stops
+            addStop("Pallipalayam", 8, 12);
+            addStop("SPB Colony", 10, 8);
+            addStop("KSR College", 19, 15);
+            addStop("Tiruchengode", 24, 20);
+            addStop("Namakkal", 55, 5);
+
+            // Fare form submission
+            fareForm.addEventListener('submit', async function(e) {
+                e.preventDefault(); 
+                calculateBtn.disabled = true;
+                calculateBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculating...';
+                loadingSpinner.style.display = 'block';
+                resultsPlaceholder.style.display = 'none';
+                resultsContent.style.display = 'none';
+
+                const stops = [];
+                document.querySelectorAll('.stop-row').forEach(row => {
+                    const name = row.querySelector('.stop-name').value;
+                    const distance = row.querySelector('.stop-distance').value;
+                    const students = row.querySelector('.stop-students').value;
+                    if (name && distance && students) {
+                        stops.push({ name: name, distance: parseFloat(distance), students: parseInt(students) });
+                    }
+                });
+
+                // ⭐️ UPDATED PAYLOAD ⭐️
+                const payload = {
+                    avg_route_km_day: document.getElementById('avg_route_km_day').value,
+                    bus_mileage: document.getElementById('bus_mileage').value,
+                    maint_cost_day: document.getElementById('maint_cost_day').value,
+                    driver_salary_day: document.getElementById('driver_salary_day').value,
+                    insurance_cost_day: document.getElementById('insurance_cost_day').value,
+                    days_in_semester: document.getElementById('days_in_semester').value,
+                    contingency_pct: document.getElementById('contingency_pct').value,
+                    stops: stops
+                };
+
+                try {
+                    const response = await fetch('/calculate_fare', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const results = await response.json();
+                    if (response.ok) {
+                        displayResults(results);
+                    } else {
+                        throw new Error(results.error || 'Unknown error');
+                    }
+                } catch (error) {
+                    resultsPlaceholder.style.display = 'block';
+                    resultsPlaceholder.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                } finally {
+                    calculateBtn.disabled = false;
+                    calculateBtn.innerHTML = '<i class="bi bi-calculator-fill"></i> Calculate & Set Fares';
+                    loadingSpinner.style.display = 'none';
+                }
+            });
+
+            // Function to render all the results
+            function displayResults(data) {
+                document.getElementById('stat-total-cost').textContent = formatCurrency(data.total_semester_cost);
+                document.getElementById('stat-total-students').textContent = data.total_students;
+                document.getElementById('stat-avg-cost').textContent = formatCurrency(data.avg_cost_per_student);
+                
+                const tableBody = document.getElementById('fare-table-body');
+                tableBody.innerHTML = '';
+                data.fare_breakdown.forEach(stop => {
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td>${stop.name}</td>
+                            <td>${stop.distance} KM</td>
+                            <td>${stop.students}</td>
+                            <td class="text-end fw-bold">${formatCurrency(stop.fare_per_student)}</td>
+                        </tr>
+                    `;
+                });
+
+                if (costChartInstance) costChartInstance.destroy();
+                costChartInstance = new Chart(document.getElementById('costBreakdownChart').getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Fuel & Maint.', 'Salaries & Permits', 'Contingency Fund'],
+                        datasets: [{
+                            data: [data.cost_breakdown_data.base_cost, data.cost_breakdown_data.fixed_costs, data.cost_breakdown_data.contingency],
+                            backgroundColor: ['#0d6efd', '#198754', '#ffc107']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                if (fareChartInstance) fareChartInstance.destroy();
+                fareChartInstance = new Chart(document.getElementById('fareBarChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.fare_breakdown.map(s => s.name),
+                        datasets: [{ label: 'Semester Fare (₹)', data: data.fare_breakdown.map(s => s.fare_per_student), backgroundColor: '#0d6efd' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+
+                resultsContent.style.display = 'block';
+            }
+
+            
+            /**
+             * ----------------------------------------
+             * MERGE CALCULATOR LOGIC
+             * ----------------------------------------
+             */
+            const mergeForm = document.getElementById('merge-form');
+            const mergeResults = document.getElementById('merge-results');
+
+            mergeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const days = parseFloat(document.getElementById('merge-days').value);
+                const bus1 = parseFloat(document.getElementById('bus1-cost').value);
+                const bus2 = parseFloat(document.getElementById('bus2-cost').value);
+                const merged = parseFloat(document.getElementById('merged-cost').value);
+                const costSeparate = (bus1 + bus2) * days;
+                const costMerged = merged * days;
+                const savings = costSeparate - costMerged;
+                document.getElementById('merge-result-separate').textContent = formatCurrency(costSeparate);
+                document.getElementById('merge-result-merged').textContent = formatCurrency(costMerged);
+                document.getElementById('merge-result-savings').textContent = formatCurrency(savings);
+                mergeResults.style.display = 'block';
+            });
+
+
+            /**
+             * ----------------------------------------
+             * DIGITAL LOGS LOGIC
+             * ----------------------------------------
+             */
+            const logForm = document.getElementById('log-form');
+            const logTableBody = document.getElementById('log-table-body');
+            const addLogBtn = document.getElementById('add-log-btn');
+
+            async function loadLogs() {
+                try {
+                    const response = await fetch('/get_logs');
+                    const logs = await response.json();
+                    
+                    logTableBody.innerHTML = '';
+                    if (logs.length === 0) {
+                        logTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No log entries found.</td></tr>';
+                    }
+                    logs.forEach(log => {
+                        logTableBody.innerHTML += `
+                            <tr>
+                                <td>${log.date}</td>
+                                <td>${log.bus_id}</td>
+                                <td><span class="badge bg-secondary">${log.category}</span></td>
+                                <td>${log.description}</td>
+                                <td class="text-end">${formatCurrency(log.cost)}</td>
+                            </tr>
+                        `;
+                    });
+                } catch (error) {
+                    logTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load logs.</td></tr>';
+                }
+            }
+
+            logForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                addLogBtn.disabled = true;
+                addLogBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+                
+                const payload = {
+                    date: document.getElementById('log-date').value,
+                    bus_id: document.getElementById('log-bus-id').value,
+                    category: document.getElementById('log-category').value,
+                    description: document.getElementById('log-description').value,
+                    cost: document.getElementById('log-cost').value
+                };
+
+                try {
+                    const response = await fetch('/add_log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (response.ok) {
+                        logForm.reset();
+                        document.getElementById('log-date').valueAsDate = new Date();
+                        await loadLogs();
+                    } else {
+                        const err = await response.json();
+                        alert('Error saving log: ' + (err.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                } finally {
+                    addLogBtn.disabled = false;
+                    addLogBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Save Log Entry';
+                }
+            });
+
+            document.getElementById('log-date').valueAsDate = new Date();
+            loadLogs();
+
+            
+            /**
+             * ----------------------------------------
+             * ANALYTICS DASHBOARD LOGIC
+             * ----------------------------------------
+             */
+            const analyticsTab = document.getElementById('analytics-tab');
+            let fuelChartInstance = null;
+            let logChartInstance = null;
+
+            async function loadAnalyticsCharts() {
+                try {
+                    const response = await fetch('/get_analytics_data');
+                    if (!response.ok) throw new Error('Failed to fetch analytics data');
+                    
+                    const data = await response.json();
+                    
+                    // --- Create Fuel Price Chart ---
+                    const fuelCtx = document.getElementById('fuelPriceChart').getContext('2d');
+                    if (fuelChartInstance) fuelChartInstance.destroy();
+                    fuelChartInstance = new Chart(fuelCtx, {
+                        type: 'line',
+                        data: {
+                            labels: data.fuel_chart_data.labels,
+                            datasets: [{
+                                label: 'Average Diesel Price (₹)',
+                                data: data.fuel_chart_data.data,
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                                fill: false,
+                                tension: 0.1
+                            }]
+                        },
+                        options: { responsive: true }
+                    });
+
+                    // --- Create Log Cost Chart ---
+                    const logCtx = document.getElementById('logCostChart').getContext('2d');
+                    if (logChartInstance) logChartInstance.destroy();
+                    logChartInstance = new Chart(logCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.log_chart_data.labels,
+                            datasets: [{
+                                label: 'Cost by Category',
+                                data: data.log_chart_data.data,
+                                backgroundColor: [
+                                    'rgb(255, 99, 132)',
+                                    'rgb(54, 162, 235)',
+                                    'rgb(255, 205, 86)',
+                                    'rgb(75, 192, 192)',
+                                    'rgb(153, 102, 255)'
+                                ]
+                            }]
+                        },
+                        options: { responsive: true }
+                    });
+
+                } catch (error) {
+                    console.error("Error loading analytics:", error);
+                    document.getElementById('analytics-tab-pane').innerHTML = 
+                        '<div class="alert alert-danger">Failed to load analytics charts.</div>';
+                }
+            }
+            
+            analyticsTab.addEventListener('shown.bs.tab', function (event) {
+                loadAnalyticsCharts();
+            });
+
+        }); // End DOMContentLoaded
+    </script>
+</body>
+</html>
